@@ -1,0 +1,9 @@
+[submodule "u-boot"]
+	path = u-boot
+	url = ../../RKBSD/u-boot.git
+[submodule "rkbin"]
+	path = rkbin
+	url = ../../RKBSD/rkbin.git
+[submodule "freebsd-src"]
+	path = freebsd-src
+	url = ../../RKBSD/freebsd-src.git
