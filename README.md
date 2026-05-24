@@ -45,14 +45,27 @@ Outputs:
 | `u-boot/u-boot.itb` | U-Boot + ATF BL31 + DTB (FIT image) |
 | `rk3528_uboot_only.img` | Bare U-Boot image (32MB, for debugging) |
 
-### 2. Build TF Card Image
+### 2. Build FreeBSD
+
+Build world and kernel first (these must complete before running the image script):
+
+```bash
+mkdir -p freebsd-objs
+
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildworld \
+  TARGET=arm64 TARGET_ARCH=aarch64 -j$(sysctl -n hw.ncpu)
+
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildkernel \
+  KERNCONF=ROCKCHIP TARGET=arm64 TARGET_ARCH=aarch64 -j$(sysctl -n hw.ncpu)
+```
+
+### 3. Build TF Card Image
 
 ```bash
 ./build_tfcard_image.sh
 ```
 
-The script internally compiles FreeBSD world and kernel — no need to build them separately.
-Produces `rk3528_tfcard.img` (16GB):
+The script installs pre-built artifacts into a disk image, producing `rk3528_tfcard.img` (16GB):
 
 | Step | Description |
 |------|-------------|
@@ -62,7 +75,7 @@ Produces `rk3528_tfcard.img` (16GB):
 | DTB | Compile `rk3528-rock-2f.dts` → `/boot/dtb/rockchip/`, configure loader.conf |
 | Firmware | Write idbloader (LBA 64) + u-boot.itb (LBA 16384) |
 
-### 3. Flash to TF Card
+### 4. Flash to TF Card
 
 ```bash
 sudo dd if=rk3528_tfcard.img of=/dev/da0 bs=1M conv=fsync

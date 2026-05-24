@@ -45,14 +45,27 @@ rk3528a-freebsd/
 | `u-boot/u-boot.itb` | U-Boot + ATF BL31 + DTB (FIT 镜像) |
 | `rk3528_uboot_only.img` | 仅含 U-Boot 的原始镜像 (调试用，32MB) |
 
-### 2. 生成 TF 卡镜像
+### 2. 编译 FreeBSD
+
+先手动编译 world 和 kernel（镜像脚本依赖这些产物）：
+
+```bash
+mkdir -p freebsd-objs
+
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildworld \
+  TARGET=arm64 TARGET_ARCH=aarch64 -j$(sysctl -n hw.ncpu)
+
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildkernel \
+  KERNCONF=ROCKCHIP TARGET=arm64 TARGET_ARCH=aarch64 -j$(sysctl -n hw.ncpu)
+```
+
+### 3. 生成 TF 卡镜像
 
 ```bash
 ./build_tfcard_image.sh
 ```
 
-脚本内部会自动编译 FreeBSD world 和内核，无需提前单独编译。
-生成 `rk3528_tfcard.img` (16GB)：
+脚本将编译好的产物安装到磁盘镜像中，生成 `rk3528_tfcard.img` (16GB)：
 
 | 步骤 | 说明 |
 |------|------|
@@ -62,7 +75,7 @@ rk3528a-freebsd/
 | DTB | 编译 `rk3528-rock-2f.dts` → `/boot/dtb/rockchip/` 并配置 loader.conf |
 | 固件 | 写入 idbloader (LBA 64) + u-boot.itb (LBA 16384) |
 
-### 3. 烧录到 TF 卡
+### 4. 烧录到 TF 卡
 
 ```bash
 sudo dd if=rk3528_tfcard.img of=/dev/da0 bs=1M conv=fsync
