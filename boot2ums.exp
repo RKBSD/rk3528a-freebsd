@@ -1,0 +1,40 @@
+#!/usr/bin/env expect
+
+set timeout 30
+
+spawn picocom -b 1500000 --raise-dtr --raise-rts /dev/ttyU0
+set dut $spawn_id
+
+spawn nc 192.168.133.180 2323
+set button $spawn_id
+
+send -i $button "MODE 1 out\r"
+
+expect {
+    -i $dut "Terminal ready" {
+        send -i $button "SET 1 1\r"
+        sleep 0.5
+        send -i $button "SET 1 0\r"
+    }
+}
+
+expect {
+    -i $dut "Hit key to stop autoboot" {
+        sleep 0.3
+        send -i $dut "\x03"
+    }
+}
+
+# wait for all autoboot to finish and prompt appears
+expect {
+    -i $dut "=> " {}
+    timeout {
+        send -i $dut "\x03\x03"
+        sleep 2
+    }
+}
+
+send -i $dut "ums 0 mmc 1\r"
+
+set spawn_id $dut
+interact

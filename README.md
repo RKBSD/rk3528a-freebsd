@@ -49,7 +49,44 @@ gmake CROSS_COMPILE=/usr/local/bin/aarch64-none-elf- HOSTCC=cc \
 - Rock 2F: `rk3528-rock-2f.dtb`
 - Radxa E20C: `rk3528-radxa-e20c.dtb`
 
-### 2. 生成 TF 卡镜像
+### 2. 编译 FreeBSD (可选)
+
+如需从源码编译 FreeBSD world 和内核：
+
+```bash
+# 创建独立编译输出目录
+mkdir -p freebsd-objs
+
+# 编译 world (用户态工具链)
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildworld \
+  TARGET=arm64 TARGET_ARCH=aarch64 -j$(sysctl -n hw.ncpu)
+
+# 编译内核
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildkernel \
+  KERNCONF=ROCKCHIP TARGET=arm64 TARGET_ARCH=aarch64 -j$(sysctl -n hw.ncpu)
+```
+
+> FreeBSD 源码位于 `freebsd-src/` 子模块。`MAKEOBJDIRPREFIX` 将所有编译产物隔离到 `freebsd-objs/` 目录。
+
+#### 增量编译 (快速调试)
+
+首次全量编译后，日常调试只需修改内核并重编，无需每次重新编译 world：
+
+```bash
+# 仅重新编译内核 (增量，跳过已编译目标)
+MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildkernel \
+  KERNCONF=ROCKCHIP TARGET=arm64 TARGET_ARCH=aarch64 \
+  -DKERNFAST -DNO_CLEAN -j$(sysctl -n hw.ncpu)
+```
+
+| 选项 | 作用 |
+|------|------|
+| `-DKERNFAST` | 跳过 config、depend 等重复步骤，只编译变化的源文件 |
+| `-DNO_CLEAN` | 不执行 `make clean`，保留已有 `.o`，仅重编修改过的文件 |
+
+> **典型调试流程**：首次全量 `buildkernel` → 改内核代码 → 增量 `buildkernel -DKERNFAST -DNO_CLEAN` → 循环。
+
+### 3. 生成 TF 卡镜像
 
 ```bash
 # 创建空白镜像
@@ -62,7 +99,7 @@ dd if=u-boot/idbloader.img of=rk3528_uboot.img bs=512 seek=64 conv=notrunc
 dd if=u-boot/u-boot.itb of=rk3528_uboot.img bs=512 seek=16384 conv=notrunc
 ```
 
-### 3. 烧录到 TF 卡
+### 4. 烧录到 TF 卡
 
 ```bash
 sudo dd if=rk3528_uboot.img of=/dev/da0 bs=1M conv=fsync
@@ -91,6 +128,8 @@ LBA        偏移        内容
 Rock 2F 使用 2 层 PCB，因此 DDR 固件选用 `2L_PCB` 版本。
 
 ## 硬件信息
+
+![RK3528A 硬件拓扑](assets/rk3528a_topology.png)
 
 - **SoC**: Rockchip RK3528A (4×Cortex-A53, ARMv8-A)
 - **内存映射**: 0x00000000 - 0xFC000000 (最大 4GB)
