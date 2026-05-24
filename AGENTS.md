@@ -88,7 +88,7 @@ MAKEOBJDIRPREFIX=$(pwd)/freebsd-objs make -C freebsd-src buildkernel \
 ```
 `-DKERNFAST` skips config/depend phases; `-DNO_CLEAN` preserves `.o` files.
 
-**Full TF card image**: Run `./build_tfcard_image.sh` — it creates a GPT-partitioned image with ESP (FAT16) + rootfs (UFS), installs FreeBSD world/kernel, and writes idbloader+u-boot.itb to raw sectors.
+**Full TF card image**: Run `./build_tfcard_image.sh` — it creates a GPT-partitioned image with ESP (FAT16) + rootfs (UFS), installs FreeBSD world/kernel, compiles `rk3528-rock-2f.dts`→DTB into `/boot/dtb/rockchip/`, configures `/boot/loader.conf` for DTB loading, and writes idbloader+u-boot.itb to raw sectors.
 
 ### Automation Scripts
 
@@ -158,7 +158,7 @@ rkbin/bin/rk35/
 └── ... (other RK35xx family blobs)
 ```
 
-Rock 2F uses 2-layer PCB → `rk3528_ddr_1056MHz_2L_PCB_v1.11.bin` as referenced in README.md.
+Rock 2F uses the standard DDR blob: `rk3528_ddr_1056MHz_v1.11.bin`.
 
 ### Key Memory Layout (from `rk3528_common.h`)
 

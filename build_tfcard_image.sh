@@ -62,9 +62,29 @@ sudo env MAKEOBJDIRPREFIX=$OBJ \
 
 # 6e. /etc/fstab — 让 FreeBSD 挂载 rootfs 和 ESP
 sudo tee $MNT/etc/fstab <<'FSTAB'
-/dev/gpt/rootfs  /       ufs  rw,noatime  1  1
-/dev/gpt/BOOTFS  /boot/efi  msdosfs  rw,noatime  0  0
+/dev/mmcsd0p2  /       ufs  rw,noatime  1  1
+/dev/mmcsd0p1  /boot/efi  msdosfs  rw,noatime  0  0
 FSTAB
+
+sudo umount $MNT
+rmdir $MNT
+
+# ── 6f. 编译并安装 DTB ─────────────────────────────────────────
+dtc -I dts -O dtb -o ${SCRIPT_DIR}/rk3528-rock-2f.dtb \
+  ${SCRIPT_DIR}/rk3528-rock-2f.dts
+
+MNT=$(mktemp -d)
+sudo mount /dev/${MD}p2 $MNT
+
+sudo mkdir -p $MNT/boot/dtb/rockchip
+sudo cp ${SCRIPT_DIR}/rk3528-rock-2f.dtb $MNT/boot/dtb/rockchip/
+
+# ── 6g. 配置 loader.conf 加载 DTB ──────────────────────────────
+sudo tee -a $MNT/boot/loader.conf <<'LOADER'
+rk3528-rock-2f.dtb_type="dtb"
+rk3528-rock-2f.dtb_load="YES"
+rk3528-rock-2f.dtb_name="boot/dtb/rockchip/rk3528-rock-2f.dtb"
+LOADER
 
 sudo umount $MNT
 rmdir $MNT
